@@ -1,6 +1,32 @@
+# Deklaracija provajdera unutar modula
+terraform {
+  required_providers {
+    aws = {
+      source = "hashicorp/aws"
+    }
+  }
+}
+
+# Dinamički pronalazi najnoviji zvanični Ubuntu 22.04 LTS AMI za bilo koji region
+data "aws_ami" "ubuntu" {
+  most_recent = true
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+
+  owners = ["099720109477"] # Zvanični ID za Canonical (tvorce Ubuntu-a)
+}
+
 # AWS Key Pair - Registruje tvoj lokalni SSH ključ na AWS-u
 resource "aws_key_pair" "deployer" {
-  key_name   = "${var.environment}-deployer-key"
+  key_name   = "${var.environment}-deployer-key-${var.aws_region}"
   public_key = file("~/.ssh/multi-region-key.pub")
 }
 
@@ -54,7 +80,7 @@ resource "aws_route_table_association" "rta" {
   route_table_id = aws_route_table.rt.id
 }
 
-# Security Group (Zid zaštite - otvaramo samo portove 22 za SSH i 8000 za aplikaciju)
+# Security Group (Zid zaštite - portovi 22 za SSH i 8000 za aplikaciju)
 resource "aws_security_group" "web_sg" {
   name        = "${var.environment}-sg-${var.aws_region}"
   description = "Allow SSH and App Port"
@@ -86,9 +112,9 @@ resource "aws_security_group" "web_sg" {
   }
 }
 
-# EC2 Instanca na kojoj će raditi naš Docker kontejner
+# EC2 Instanca koja koristi automatski pronađen AMI ID
 resource "aws_instance" "web" {
-  ami                    = var.ami_id
+  ami                    = data.aws_ami.ubuntu.id
   instance_type          = var.instance_type
   subnet_id              = aws_subnet.public.id
   vpc_security_group_ids = [aws_security_group.web_sg.id]

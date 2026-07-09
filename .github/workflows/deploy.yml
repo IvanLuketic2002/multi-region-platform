@@ -30,20 +30,24 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
-    needs: build-and-push # Ovaj posao čeka da se build uspešno završi
+    needs: build-and-push
+    strategy:
+      # Matrica omogućava da se isti koraci izvrše za više različitih vrednosti (IP adresa) paralelno!
+      matrix:
+        host: [ "${{ secrets.SSH_HOST }}", "${{ secrets.SSH_HOST_SECONDARY }}" ]
     steps:
     - name: Deploy to AWS EC2 via SSH
       uses: appleboy/ssh-action@v0.1.10
       with:
-        host: ${{ secrets.SSH_HOST }}
+        host: ${{ matrix.host }}
         username: ubuntu
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: 22
         script: |
-          echo "Povezan na AWS server. Pokrećem deploy..."
+          echo "Povezan na AWS server: ${{ matrix.host }}. Pokrećem deploy..."
           
-          # Čekamo par sekundi za svaki slučaj da se Docker instalacija završi ako je server tek podignut
-          sleep 10
+          # Čekamo 15 sekundi da budemo sigurni da je Docker instaliran ako je server tek podignut
+          sleep 15
           
           # Zaustavi i obriši stari kontejner ako postoji
           sudo docker stop backend-app || true
@@ -59,4 +63,4 @@ jobs:
             --restart always \
             ${{ secrets.DOCKERHUB_USERNAME }}/multi-region-backend:latest
           
-          echo "Deploy je uspešno završen!"
+          echo "Deploy na ${{ matrix.host }} je uspešno završen!"

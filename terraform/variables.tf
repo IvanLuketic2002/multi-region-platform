@@ -10,3 +10,8 @@ variable "environment" {
   description = "Okruženje u kome se resursi podižu"
 }
 
+variable "secondary_region" {
+  type        = string
+  default     = "eu-west-3"
+  description = "Sekundarni AWS region (Pariz)"
+}

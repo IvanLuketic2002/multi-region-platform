@@ -1,0 +1,12 @@
+# Terraform sakriveni folderi i drajveri
+.terraform/
+*.terraform*
+.terraform.lock.hcl
+
+# Terraform stanja (unutra su osetljivi podaci i ključevi)
+*.tfstate
+*.tfstate.*
+
+# Izuzmi lokalne varijable
+*.tfvars
+*.tfvars.json
